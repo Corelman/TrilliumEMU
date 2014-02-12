@@ -25,7 +25,6 @@
 
 enum Yells //need texts
 {
-    //Ragnaros
     SAY_AGGRO                   = -0,     //sound id 24517
     SAY_DEATH                   = -0,     //sound id 24519
     SAY_KILL_1                  = -0,     //sound id 24531
@@ -38,15 +37,10 @@ enum Yells //need texts
     SAY_HAMMER_PICKUP_2         = -0,     //sound id 24524
     SAY_HAMMER_PICKUP_3         = -0,     //sound id 24525
     SAY_PURGE                   = -0,     //sound id 24532
-
-    //Thrall on Heroic
-    SAY_DIALOG_1                = -0,
-    SAY_DIALOG_2                = -0,
 };
 
 enum Spells
 {
-    //ragnaros
     SPELL_SULFURAS_SMASH        = 98710,
     SPELL_LIVING_METEOR         = 99268,    //every difficult
     SPELL_WRATH_OF_RAGNAROS     = 98263,
@@ -56,38 +50,12 @@ enum Spells
     SPELL_MAGMA_TRAP            = 98164,    //every difficult
     SPELL_LAVA_WAVE             = 100293,
     SPELL_HAND_OF_RAGNAROS      = 98237,
-
-    //living meteor
-    SPELL_METEOR_CRASH          = 99287,    //10 player normal
 };
 
 enum Events     //non heroic
 {
-    //Basic Event
     EVENT_SULFURAS_SMASH        = 0,
-    EVENT_HAMMER_DROP           = 1,
-    EVENT_GO_DOWN               = 2,
-    EVENT_GO_UP                 = 3,
-    EVENT_HAMMER_PICKUP         = 4,
-
-    //Sulfuras Hammer Event
-    EVENT_PULL_ADDS             = 3,
-    EVENT_KILL_PLAYERS          = 4,
-
-    //Events while Ragnaros is down
-    EVENT_SUMMON_ADDS_1         = 5,
-    EVENT_SUMMON_ADDS_2         = 6,
-
-};
-
-enum Phase
-{
-    PHASE_ONE                   = 1,
-    PHASE_TWO                   = 2,
-    PHASE_THREE                 = 3,
-    PHASE_FOUR                  = 4,
-    PHASE_FIVE                  = 5,
-};
+}
 
 class boss_ragnaros_cata : public CreatureScript
 {
@@ -107,8 +75,6 @@ class boss_ragnaros_cata : public CreatureScript
 
             void Reset()
             {
-                _Reset();
-                me->SetReactState(REACT_PASSIVE);
                 if (instance)
                     isntance->SetData(DATA_RAGNAROS_EVENT, NOT_STARTED);
 
@@ -122,16 +88,14 @@ class boss_ragnaros_cata : public CreatureScript
                 if (instance)
                     instance->SetData(DATA_RAGNAROS_EVENT, IN_PROGRESS);
 
-                me->setActive(true);
-                DoZoneInCombat();
-                events.SetPhase(PHASE_ONE);
-                events.ScheduleEvent(EVENT_SULFURAS_SMASH, 40000, 0, PHASE_ONE);
+                events.SetPhase(PHASE_1);
+                events.ScheduleEvent(EVENT_SULFURAS_SMASH, 40000);
 
             }
 
             void JustDied(Unit* /*killer*/)
             {
-                _JustDied();
+                _JustDied
                 DoScriptText(SAY_DEATH, me);
                 if (instance)
                     instance->SetData(DATA_RAGNAROS_EVENT, DONE);
@@ -148,75 +112,36 @@ class boss_ragnaros_cata : public CreatureScript
                 {
                     return;
 
-                if (me->HealthBelowPct(70) && Phase == PHASE_ONE)
-                {
-                    me->SetReactState(REACT_PASSIVE);
-                    events.SetPhase(PHASE_TWO);
-                    events-ScheduleEvent(EVENT_HAMMER_DROP, 24000000, 0, PHASE_TWO);
-                }
-
-
                     events.Update(diff);
 
                     while (uint32 eventId = events.ExecuteEvent())
                     {
-                        switch (eventId)
-                        {
-                            case EVENT_SULFURAS_SMASH:
-                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
-                                {
-                                    DoCast(SPELL_SULFURAS_SMASH, me)
-                                }
-                                events.ScheduleEvent(EVENT_SULFURAS_SMASH, 40000, 0, PHASE_ONE);
-                                break;
-                            case EVENT_HAMMER_DROP:
-                                break;
-                            case EVENT_HAMMER_PICKUP:
-                                break;
-                            case EVENT_GO_DOWN:
-                                break;
-                            case EVENT_GO_UP:
-                                break;
-                        }
                     }
 
-                    DoMeleeAttackIfReady();
+                    switch (GetPhase(events))
+                    {
+                        case PHASE_1
+                        {
+                            switch (eventId)
+                            {
+                                case EVENT_SULFURAS_SMASH:
+                                {
+                                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                                    DoCast(SPELL_SULFURAS_SMASH, me)
+                                    events.ScheduleEvent(EVENT_SULFURAS_SMASH, 40000);
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
                 }
-
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new boss_ragnaros_cataAI(creature);
-        }
-};
-
-class npc_living_meteor : public CreatureScript
-{
-    public:
-        npc_living_meteor() : CreatureScript("npc_living_meteor") { }
-
-        struct npc_living_meteorAI : public CreatureAI
-        {
-            npc_living_meteor(Creature* creature) : ScriptedAI(creature)
-            {
-                pInstance = creature->GetInstanceScript();
-            }
-            
-            InstanceScript* pInstance;
-            EventMap events;
-
-            void EnterCombat(Unit * /*who*/)        //for selecting the first random player
-            {
-            }
-
-            void KilledUnit(Unit* /*Killed*/)       //select next random player after first is killed
-            {
             }
         };
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_living_meteor(creature);
+            return new boss_ragnaros_cataAI(creature);
         }
 };
 
